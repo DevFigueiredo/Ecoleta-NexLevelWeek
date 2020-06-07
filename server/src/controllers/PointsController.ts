@@ -19,7 +19,7 @@ class PointsController{
      
         //Inserido a transação, para não have problema no momento do registro das duas tabelas, sendo assim, caso uma de erro a outra não funcionara tambem
      const point ={
-     image: 'image_fake',  
+     image: 'https://unsplash.com/photos/N-MqWXXZvNY/download?force=true&w=640',  
      name, 
      email,
      whatsapp,
