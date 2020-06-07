@@ -16,7 +16,7 @@ const Points = ()=>{
         navigation.goBack();
      }
      function handleNavigateToDetail(){
-      navigation.navigate('Detail');
+      navigation.navigate('Detail');    
      }
 
 
