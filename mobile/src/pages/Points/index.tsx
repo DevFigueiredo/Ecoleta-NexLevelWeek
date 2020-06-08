@@ -1,9 +1,11 @@
 import React, {useState, useEffect} from 'react';
-import {View, TouchableOpacity, Text, ScrollView, Image} from 'react-native';
+import {View, TouchableOpacity, Text, ScrollView, Image, Alert} from 'react-native';
 import {Feather as Icon} from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import MapView, {Marker} from 'react-native-maps';
 import {SvgUri} from 'react-native-svg';
+import * as Location from 'expo-location';
+
 
 import styles from './style';
 
@@ -17,10 +19,20 @@ const Points = ()=>{
         title: string,
         image_url: string 
      }
+     interface Point{
+        id: number;
+        image: string;
+        name: string;
+        latitude: number;
+        longitude: number;
+       
+     }
      const [items, setItems] = useState<Item[]>([]);
      const [selectedItem, setSelectedItem]=useState<number[]>([]);
+     const [Points, setPoints]=useState<Point[]>([]);
+     const [initialPositionMap,setInicialPositionMap] = useState<[number,number]>([0,0]);
 
-     //Insere valores dos items
+     //Realiza a consulta da funcao apenas quando a pagina for carregada
      useEffect(()=>{
         api.get('items').then(res=>{
            setItems(res.data);
@@ -28,9 +40,53 @@ const Points = ()=>{
        
        }, []);   
     
-     const navigation = useNavigation();
+       useEffect(()=>{
+        async function LoadPositionMap(){
+            //Solicita permissão para o usuário para consultarmos a localização atual
+            const {status} = await Location.requestPermissionsAsync();
+            //Verificar a permissão se foi concedida, caso contrario retorna um Alerta para o usuário
+            if(status !== 'granted') {
+                Alert.alert('Ooops!', 'Habilite sua localização nas configurações do app');
+                return;
+             }
 
-     function handleItemClick(id: number){
+             //Reliza a consulta da localização do usuário
+             const location = await Location.getCurrentPositionAsync();
+             //Desustrutura o retorno das coordenadas de localização do usuário 
+             const {latitude, longitude} = location.coords; 
+             setInicialPositionMap([latitude, longitude])
+        }
+
+        LoadPositionMap();
+       
+       }, []);   
+    
+       useEffect(()=>{
+        api.get('points',{
+            params:{
+                city: routeParams.City,
+                uf: routeParams.UF,
+                items: selectedItem
+            }
+
+        }).then(res=>{
+            setPoints(res.data);
+       })
+       
+       }, [selectedItem]);   
+
+    interface ParamsRoute{
+        UF: string;
+        City: string;
+    }
+
+    const navigation = useNavigation();
+    const route = useRoute();
+
+    const routeParams = route.params as ParamsRoute;
+    
+    
+    function handleItemClick(id: number){
         const alreadyItem = selectedItem.findIndex(item=>item===id)
         if (alreadyItem >=0){
             //Vai filtrar e deixar apenas os items que não foram o clicados
@@ -47,8 +103,8 @@ const Points = ()=>{
      function handleNavigatorBack(){
         navigation.goBack();
      }
-     function handleNavigateToDetail(){
-      navigation.navigate('Detail');    
+     function handleNavigateToDetail(id: number){
+      navigation.navigate('Detail', {point_id: id});    
      }
 
 
@@ -64,32 +120,44 @@ const Points = ()=>{
       <Text style={styles.description}>Encontre no mapa um ponto de coleta.</Text>
       
       <View style={styles.mapContainer}>
-       <MapView style={styles.map} initialRegion={{
-           latitude: -23.6395428,
-           longitude: -45.4215668,
-           latitudeDelta: 0.014,
-           longitudeDelta: 0.014,
 
-           }}>
-           <Marker style={styles.mapMarker} coordinate={{           
-           latitude: -23.6395428,
-           longitude: -45.4215668,  
-           }}
-           onPress={handleNavigateToDetail}
-           >
-           <View style={styles.mapMarkerContainer}>
-           <Image style={styles.mapMarkerImage}source={{uri:'https://unsplash.com/photos/N-MqWXXZvNY/download?force=true&w=640'}}/>
-           <Text style={styles.mapMarkerTitle}>Mercado do seu zé</Text>
-           </View>
-           </Marker>
-           </MapView>
+       {
+       //Verifica se o initial position está zerado, se tiver ele aguarda até que altere o estado pegando a localização atual do celular
+       initialPositionMap[0]!==0 && (
+           <MapView style={styles.map} 
+           initialRegion={{
+               latitude: initialPositionMap[0],
+               longitude: initialPositionMap[1],
+               latitudeDelta: 0.014,
+               longitudeDelta: 0.014,
+    
+               }}>
 
+             {Points.map(point=>(
+
+               <Marker key={point.id} style={styles.mapMarker} coordinate={{           
+                latitude: point.latitude,
+                longitude: point.longitude,  
+                }}
+                onPress={()=>handleNavigateToDetail(point.id)}
+                >
+                <View style={styles.mapMarkerContainer}>
+                <Image style={styles.mapMarkerImage}source={{uri:point.image}}/>
+                <Text style={styles.mapMarkerTitle}>{point.name}</Text>
+                </View>
+                </Marker>
+             ))}
+
+               </MapView>
+    
+       )}
       </View>
       </View>
       <View style={styles.itemsContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingHorizontal: 24}}>
          {items.map(item=>(
           <TouchableOpacity
+          key={item.id}
           activeOpacity={0.6}
           style={[
               styles.item,
