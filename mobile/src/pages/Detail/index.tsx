@@ -20,7 +20,7 @@ interface Params{
 interface Point{
     point:{
     id: number;
-    image: string;
+    image_url: string;
     name: string;
     email:string;
     whatsapp:string;
@@ -77,11 +77,10 @@ const Detail = ()=>{
         <Icon name="arrow-left" size={20} color="#34cb49" />
         </TouchableOpacity>  
 
-        <Image style={styles.pointImage} source={{uri: PointData.point.image}}/>
+        <Image style={styles.pointImage} source={{uri: PointData.point.image_url}}/>
         <Text style={styles.pointName}>{PointData.point.name}</Text>
         
         <Text style={styles.pointItems}>
-            Lampadas, Óleo de Cozinha
             {PointData.items.map(item=>item.title).join(', ')}
             </Text>
         

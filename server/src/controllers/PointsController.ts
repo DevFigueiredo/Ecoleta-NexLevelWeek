@@ -19,7 +19,7 @@ class PointsController{
      
         //Inserido a transação, para não have problema no momento do registro das duas tabelas, sendo assim, caso uma de erro a outra não funcionara tambem
      const point ={
-     image: 'https://unsplash.com/photos/N-MqWXXZvNY/download?force=true&w=640',  
+     image: req.file.filename,  
      name, 
      email,
      whatsapp,
@@ -32,13 +32,15 @@ class PointsController{
      
      const point_id = insertedIds[0];
 
-     
-     var pointItems = items.map((item_id: number)=>{
+    
+     var pointItems = items
+     .split(',')
+     .map((item:string)=>Number(item.trim()))
+     .map((item_id: number)=>{
          return {
              point_id,
              item_id,
          }
-     
      });
      await trx('point_items').insert(pointItems)
      .then(trx.commit)
@@ -66,8 +68,13 @@ class PointsController{
         
         if(!point)
         return res.status(400).json({error:'Point not founded'});
-        else
-        return res.json({point, items})
+        
+        const seriaLizedPoint =  {
+                ...point,
+                image_url: `http://192.168.100.155:3333/uploads/${point.image}`
+            };
+
+        return res.json({point: seriaLizedPoint, items})
     }
 
 
@@ -88,9 +95,14 @@ class PointsController{
 
         if(!points)
         return res.status(400).json({error: 'No points founded'})
+           
+        const seriaLizedPoints = points.map(point=>{
+            return {
+                ...point,
+                image_url: `http://192.168.100.155:3333/uploads/${point.image}`
+            }});
 
-
-        return res.json(points)
+        return res.json(seriaLizedPoints)
         
     }
 

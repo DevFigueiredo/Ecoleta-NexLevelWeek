@@ -1,4 +1,4 @@
-import React, {useEffect, useState, ChangeEvent, useRef} from 'react';
+import React, {useEffect, useState, ChangeEvent, useRef, FormEvent} from 'react';
 import './styles.css';
 import Logo from '../../assets/logo.svg';
 import {Link, useHistory} from 'react-router-dom';
@@ -12,7 +12,7 @@ import api from '../../services/api';
 import { SubmitHandler, FormHandles } from '@unform/core';
 import { Form } from '@unform/web';
 import Input from '../../components/Input';
-
+import Dropzone from '../../components/Dropzone';
 
 
 const CreatePoint = ()=>{
@@ -51,8 +51,8 @@ const CreatePoint = ()=>{
     
 
     const [selectedItem, setSelectedItem]=useState<number[]>([]);
-
-
+    const [selectedImage, setSelectedImage] = useState<File>();
+ 
     const history = useHistory();
     //Define quando eu quero executar uma função, para não ter que carregar toda vez que o componente for recarregado
    //Insere valores dos items
@@ -122,19 +122,29 @@ const CreatePoint = ()=>{
 
     const formRef = useRef<FormHandles>(null);
     async function handleSubmit(data: SubmitHandler<FormData>){
+    interface SubmitData{
+        name: string;
+        email: string;
+        whatsapp: string;
+    }
 
     const uf= selectedUF;
     const city = selectedCity;
     const [latitude, longitude] = LatLng;
     const items = selectedItem;
-    const SubmitData = {
-        ...data,
-        uf,
-        city,
-        latitude,
-        longitude,
-        items
-    }    
+     const SubmitData = new FormData();
+
+     SubmitData.append('name',data.name);
+     SubmitData.append('email',data.email);//verificar
+     SubmitData.append('whatsapp',data.whatsapp);//verificar
+     SubmitData.append('uf',uf);
+     SubmitData.append('city',city);
+     SubmitData.append('latitude',String(latitude));
+     SubmitData.append('longitude',String(longitude));
+     SubmitData.append('items',items.join(','));
+     if(selectedImage)
+     SubmitData.append('image', selectedImage);
+
 
     await api.post('http://localhost:3333/points', SubmitData);
     alert('Ponto de coleta criado com sucesso!');
@@ -156,6 +166,9 @@ const CreatePoint = ()=>{
  
        <Form ref={formRef} onSubmit={handleSubmit}>
       <h1>Cadastro do <br/>ponto de coleta</h1>
+
+     <Dropzone onFileUploaded={setSelectedImage}/>
+
      <fieldset>
          <legend>
              <h2>Dados</h2>
